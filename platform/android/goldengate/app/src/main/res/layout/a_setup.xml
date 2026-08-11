@@ -17,10 +17,57 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
+            <LinearLayout
+                android:id="@+id/oauth_probe_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Android 通知 → Fitbit Air Bridge" />
+
+                <EditText
+                    android:id="@+id/notification_package_allowlist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top|start"
+                    android:hint="com.tencent.mm=single"
+                    android:inputType="textMultiLine|textVisiblePassword"
+                    android:maxLines="5"
+                    android:minLines="3"
+                    android:singleLine="false" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="每行：应用包名=pattern，最多 5 个。pattern 可选 single、double、triple、long_gap、urgent。先保存并授予通知访问权限，再连接 Air；当前 alpha 版需保持连接界面运行。" />
+
+                <Button
+                    android:id="@+id/notification_access_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="保存规则并打开通知访问权限" />
+
+                <TextView
+                    android:id="@+id/notification_access_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/black"
+                    android:padding="8dp"
+                    android:textColor="@android:color/white"
+                    android:text="通知访问权限状态：未检查"
+                    android:textIsSelectable="true"
+                    android:typeface="monospace" />
+            </LinearLayout>
+
             <TextView
                 android:id="@+id/configLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_below="@id/oauth_probe_layout"
+                android:layout_marginTop="14dp"
                 android:text="Stack Configuration"/>
 
             <RadioGroup

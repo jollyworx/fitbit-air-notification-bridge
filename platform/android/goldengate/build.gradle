@@ -6,15 +6,14 @@
 buildscript {
     repositories {
         google()
+        mavenCentral()
+        gradlePluginPortal()
         jcenter()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.1.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$KOTLIN_VERSION"
-        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.17.2"
-        classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:0.9.17"
         classpath 'org.codehaus.groovy:groovy-all:2.5.6' //Something (jacoco?) depends on this but it doesn't get brought in until later, causing a conflict
-        classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.8"
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -22,6 +21,7 @@ buildscript {
 
 allprojects {
     repositories {
+        mavenCentral()
         jcenter()
         google()
         maven { url 'https://jitpack.io' }
@@ -60,25 +60,6 @@ ext.setupPublishDependency = { publishTask ->
     }
 }
 
-apply plugin: 'org.sonarqube'
-
 task testDebugCoverage
-project.tasks["sonarqube"].dependsOn "testDebugCoverage"
-sonarqube {
-    properties {
-        property 'sonar.projectKey', 'com.fitbit.goldengate.android'
-        property 'sonar.projectName', 'Golden Gate Android'
-        property 'sonar.sourceEncoding', 'UTF-8'
-        property 'sonar.java.coveragePlugin', 'jacoco'
-        property 'sonar.jacoco.reportPaths', './build/jacoco/testDebugUnitTest.exec'
-        property 'sonar.coverage.jacoco.xmlReportPaths', 'build/reports/jacoco/testDebugCoverage/testDebugCoverage.xml'
-
-    }
-}
-project(":app") {
-    sonarqube {
-        skipProject = true
-    }
-}
 
 //TODO FC-1547 Figure out how to combine Jacoco reports from Bindings and Connection Manager

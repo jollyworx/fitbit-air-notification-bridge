@@ -21,7 +21,7 @@ android {
         }
     }
     defaultConfig {
-        applicationId "com.fitbit.goldengatehost"
+        applicationId "io.github.paceaitian.fitbitairbridge"
         ext.code = System.getenv("BUILD_NUMBER")
         versionCode hostVersionCode
         versionName hostVersionName

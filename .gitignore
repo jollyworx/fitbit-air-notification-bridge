@@ -45,6 +45,15 @@ xcuserdata/
 # Node
 node_modules
 
+# Android / local tooling
+.gradle/
+.idea/
+local.properties
+*.apk
+**/build/
+**/.cxx/
+**/.cxx-stale-*/
+
 # Ruby
 .ruby-version
 settings.json

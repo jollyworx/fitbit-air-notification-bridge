@@ -1,3 +1,15 @@
+Fitbit Air Notification Bridge
+Copyright 2026 Fitbit Air Notification Bridge contributors
+
+This project is derived from software developed by Fitbit, Inc. as part of
+the Golden Gate project (https://github.com/Fitbit/golden-gate).
+
+Golden Gate copyright 2017-2020 Fitbit, Inc. and is licensed under the
+Apache License, Version 2.0.
+
+Fitbit, Fitbit Air, Google, and Google Health are trademarks of their
+respective owners. This project is independent and unofficial.
+
 This project depends in part on other open source projects.
 Depending on how you use the project, and which platforms/targets
 you are compiling for, some of the following components may be used.

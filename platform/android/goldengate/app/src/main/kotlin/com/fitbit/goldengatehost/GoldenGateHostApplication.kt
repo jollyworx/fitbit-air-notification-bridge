@@ -7,6 +7,7 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.os.Build
 import android.util.Log
+import com.fitbit.goldengate.bindings.dtls.TlsKeyResolverRegistry
 import io.reactivex.exceptions.UndeliverableException
 import io.reactivex.plugins.RxJavaPlugins
 import timber.log.Timber
@@ -22,6 +23,7 @@ class GoldenGateHostApplication : Application() {
 
         initRxJava()
         Timber.plant(ThreadReportingTimberTree())
+        TlsKeyResolverRegistry.register(DiagnosticTlsIdentityRecorder)
     }
 
     class ThreadReportingTimberTree : Timber.DebugTree() {

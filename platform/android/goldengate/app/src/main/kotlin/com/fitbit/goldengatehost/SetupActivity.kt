@@ -9,6 +9,7 @@ import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationManagerCompat
 import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
@@ -67,6 +68,9 @@ class SetupActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private lateinit var rbGlUdp: RadioButton
     private lateinit var rbGlUdpDtls: RadioButton
     private lateinit var startButton: Button
+    private lateinit var notificationPackageAllowlist: EditText
+    private lateinit var notificationAccessButton: Button
+    private lateinit var notificationAccessStatus: android.widget.TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +85,20 @@ class SetupActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         radioGroupBleRole.setOnCheckedChangeListener { _, _ -> respondToSettingsChange()  }
 
         startButton.setOnClickListener { startMainActivity() }
+        notificationPackageAllowlist.setText(AirBridgeNotificationSettings.loadText(this))
+        notificationAccessButton.setOnClickListener {
+            val parsed = AirBridgeNotificationSettings.parseRules(
+                notificationPackageAllowlist.text.toString()
+            )
+            if (!parsed.isValid) {
+                notificationAccessStatus.text = "规则未保存：\n${parsed.errors.joinToString("\n")}"
+                Toast.makeText(this, "请先修正规则格式", Toast.LENGTH_LONG).show()
+            } else {
+                AirBridgeNotificationSettings.saveRules(this, parsed.rules)
+                notificationPackageAllowlist.setText(AirBridgeNotificationSettings.loadText(this))
+                startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+            }
+        }
     }
 
     private fun bindViews() {
@@ -102,6 +120,9 @@ class SetupActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         rbGlUdp = ActivityCompat.requireViewById(this, R.id.rb_gl_udp)
         rbGlUdpDtls = ActivityCompat.requireViewById(this, R.id.rb_gl_udp_dtls)
         startButton = ActivityCompat.requireViewById(this, R.id.start_button)
+        notificationPackageAllowlist = ActivityCompat.requireViewById(this, R.id.notification_package_allowlist)
+        notificationAccessButton = ActivityCompat.requireViewById(this, R.id.notification_access_button)
+        notificationAccessStatus = ActivityCompat.requireViewById(this, R.id.notification_access_status)
     }
 
     private fun setPacketSizeSpinner() {
@@ -116,8 +137,15 @@ class SetupActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     override fun onResume() {
         super.onResume()
 
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION), REQ_ID)
+        val granted = packageName in NotificationManagerCompat.getEnabledListenerPackages(this)
+        val rules = AirBridgeNotificationSettings.loadRules(this).joinToString("\n") {
+            "${it.packageName} → ${it.pattern.wireName}"
+        }
+        notificationAccessStatus.text =
+            "通知访问权限=${if (granted) "已授权" else "未授权"}\n当前规则：\n$rules"
+
+        if (!AirBluetoothPermissions.hasAll(this)) {
+            AirBluetoothPermissions.request(this, REQ_ID)
         }
     }
 
@@ -178,6 +206,12 @@ class SetupActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     }
 
     private fun startMainActivity() {
+
+        if (!AirBluetoothPermissions.hasAll(this)) {
+            AirBluetoothPermissions.request(this, REQ_ID)
+            Toast.makeText(this, "请先允许附近设备/蓝牙扫描权限", Toast.LENGTH_LONG).show()
+            return
+        }
 
         if (!initialized.getAndSet(true)) {
             GoldenGateConnectionManagerModule.init(applicationContext, loggingEnabled=true, isBleCentralRole=rbCentral.isChecked)

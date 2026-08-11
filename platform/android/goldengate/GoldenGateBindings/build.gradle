@@ -4,9 +4,6 @@
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
-    id 'org.jetbrains.dokka-android'
-    id 'com.jfrog.artifactory'
-    id 'maven-publish'
 }
 
 def packageName = 'com.fitbit.goldengate.bindings'
@@ -17,7 +14,8 @@ android {
 
     defaultConfig {
         ndk {
-            abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
+            // Diagnostic build: the target phone is 64-bit ARM.
+            abiFilters 'arm64-v8a'
         }
         externalNativeBuild {
             cmake {
@@ -138,30 +136,6 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
 
 apply from: '../jacoco.gradle'
 
-dokka {
-    outputFormat = 'html'
-    outputDirectory = "$buildDir/javadoc"
-    reportUndocumented = true
-}
-
-task sourceJar(type: Jar) {
-    from android.sourceSets.main.kotlin.srcDirs
-    classifier "sources"
-}
-
-publishing {
-    publications {
-        aar(MavenPublication) {
-            groupId packageName
-            version = libraryVersionName
-            artifactId project.getName()
-
-            artifact(sourceJar)
-            artifact ("$buildDir/outputs/aar/GoldenGateBindings-${publishVariant}.aar")
-        }
-    }
-}
-
 //For some reason the default clean task doesn't do this
 task externalNativeBuildClean(type: Delete) {
     delete '.externalNativeBuild/cmake'
@@ -172,5 +146,3 @@ clean {
         externalNativeBuildClean
     }
 }
-
-setupPublishDependency(artifactoryPublish)

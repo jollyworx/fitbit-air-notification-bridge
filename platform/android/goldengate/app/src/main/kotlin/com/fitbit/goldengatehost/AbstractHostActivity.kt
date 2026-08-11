@@ -95,6 +95,8 @@ abstract class AbstractHostActivity<T: StackService> : AppCompatActivity() {
     private var backPressedListener: (() -> Unit)? = null
     private lateinit var nodeKey: BluetoothAddressNodeKey
     private var isBleCentralRole: Boolean = true
+    private val dtlsEventHistory = mutableListOf<String>()
+    private var dtlsEventsDropped = 0
     /**
      * Get the android content view
      */
@@ -132,6 +134,7 @@ abstract class AbstractHostActivity<T: StackService> : AppCompatActivity() {
         isBleCentralRole = intent.getBooleanExtra(EXTRA_IS_BLE_CENTRAL_ROLE, true)
 
         if (isBleCentralRole) {
+            DiagnosticTlsIdentityRecorder.clear()
             val bluetoothDevice  = intent.getParcelableExtra<BluetoothDevice>(EXTRA_DEVICE)
             val gattConnection = FitbitGatt.getInstance().getConnection(bluetoothDevice)
             if (gattConnection == null || bluetoothDevice == null) {
@@ -373,8 +376,8 @@ abstract class AbstractHostActivity<T: StackService> : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION), REQ_ID)
+        if (!AirBluetoothPermissions.hasAll(this)) {
+            AirBluetoothPermissions.request(this, REQ_ID)
         }
     }
 
@@ -385,23 +388,68 @@ abstract class AbstractHostActivity<T: StackService> : AppCompatActivity() {
                     stack.dtlsEventObservable
                         .observeOn(AndroidSchedulers.mainThread())
                         .doOnNext {
-                            if (it.state != DtlsProtocolStatus.TlsProtocolState.TLS_STATE_ERROR) {
-                                handshakeStatus.text = getString(R.string.handshake_status, it.state.name)
+                            val reportedIdentity = it.pskIdentity.ifBlank { "-" }
+                            val requestedIdentity = if (it.lastError == GG_ERROR_TLS_UNKNOWN_IDENTITY) {
+                                DiagnosticTlsIdentityRecorder.renderedIdentity()
                             } else {
-                                handshakeStatus.text = getString(R.string.handshake_status,
-                                                                 "%s (error code = %d)".format(it.state.name, it.lastError))
+                                null
                             }
+                            val errorName = tlsErrorName(it.lastError)
+                            val errorText = if (errorName == null) {
+                                "${it.lastError}"
+                            } else {
+                                "${it.lastError}/$errorName"
+                            }
+                            val requestedText = requestedIdentity?.let { value ->
+                                ", requested=$value"
+                            } ?: ""
+                            val event = "${it.state.name} [err=$errorText, PSK=$reportedIdentity$requestedText]"
+                            if (dtlsEventHistory.lastOrNull() != event) {
+                                if (dtlsEventHistory.size < MAX_DTLS_HISTORY_EVENTS) {
+                                    dtlsEventHistory.add(event)
+                                } else {
+                                    dtlsEventsDropped++
+                                }
+                            }
+                            val renderedHistory = dtlsEventHistory.mapIndexed { index, value ->
+                                "#${index + 1} $value"
+                            }.toMutableList()
+                            if (dtlsEventsDropped > 0) {
+                                renderedHistory.add("...另有 $dtlsEventsDropped 个后续事件未显示")
+                            }
+                            handshakeStatus.text = getString(
+                                R.string.handshake_status,
+                                "\n" + renderedHistory.joinToString("\n")
+                            )
                         }
                 }
             }
             else ->  { stack -> stack.dtlsEventObservable }
         }
 
+    private fun tlsErrorName(error: Int): String? = when (error) {
+        GG_ERROR_TLS_UNKNOWN_IDENTITY -> "UNKNOWN_IDENTITY"
+        GG_ERROR_TLS_BAD_CLIENT_HELLO -> "BAD_CLIENT_HELLO"
+        GG_ERROR_TLS_BAD_SERVER_HELLO -> "BAD_SERVER_HELLO"
+        GG_ERROR_TLS_UNMAPPED_LIB_ERROR -> "UNMAPPED_LIB_ERROR"
+        GG_FAILURE -> "GG_FAILURE"
+        else -> null
+    }
+
     private val listenToGattlinkStatus: (GattConnection) -> Observable<PeripheralConnectionStatus> = { connection ->
         PeripheralConnectionChangeListener().register(connection).observeOn(AndroidSchedulers.mainThread())
             .doOnNext {
                 gattlinkStatus.text = getString(R.string.gattlink_status, it)
             }
+    }
+
+    companion object {
+        private const val MAX_DTLS_HISTORY_EVENTS = 10
+        private const val GG_FAILURE = -1
+        private const val GG_ERROR_TLS_UNKNOWN_IDENTITY = -10601
+        private const val GG_ERROR_TLS_BAD_CLIENT_HELLO = -10602
+        private const val GG_ERROR_TLS_BAD_SERVER_HELLO = -10603
+        private const val GG_ERROR_TLS_UNMAPPED_LIB_ERROR = -10604
     }
 
     private fun connectToPeripheral(stackPeer: Peer<T>, currentDevice: BitGattPeer, stackConfig: StackConfig) {
