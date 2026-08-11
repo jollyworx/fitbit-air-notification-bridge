@@ -103,20 +103,6 @@ class CoapActivity : AbstractHostActivity<CoapEndpoint>() {
         }
         sendRequestTime = System.currentTimeMillis()
         runHapticsReadProbe(stackService)
-        AirNotificationBridgeController.attach(this) { trigger ->
-            val intensity = currentHapticsIntensity
-            if (hapticsOperationInProgress ||
-                intensity !in AirDirectSettingsProtocol.HAPTICS_LOW..AirDirectSettingsProtocol.HAPTICS_HIGH
-            ) {
-                false
-            } else {
-                runOnUiThread {
-                    sendRequestTime = System.currentTimeMillis()
-                    runNotificationHapticPattern(stackService, intensity!!, trigger)
-                }
-                true
-            }
-        }
     }
 
     private fun renderButtonText(stackConfig: StackConfig) {
@@ -367,11 +353,6 @@ class CoapActivity : AbstractHostActivity<CoapEndpoint>() {
                     }
                     .map { restoreResponse -> alternateResponse to restoreResponse }
             }
-
-    override fun onDestroy() {
-        AirNotificationBridgeController.detach(this)
-        super.onDestroy()
-    }
 
     private fun alternateHapticsIntensity(intensity: Int): Int = when (intensity) {
         AirDirectSettingsProtocol.HAPTICS_HIGH -> AirDirectSettingsProtocol.HAPTICS_LOW

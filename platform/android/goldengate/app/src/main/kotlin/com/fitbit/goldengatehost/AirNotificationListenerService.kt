@@ -44,7 +44,7 @@ class AirNotificationListenerService : NotificationListenerService() {
         if (isRecentDuplicate(contentSignature)) return
 
         val trigger = AirNotificationTrigger(rule.packageName, rule.pattern)
-        val accepted = AirNotificationBridgeController.requestPulse(trigger)
+        val accepted = AirBridgeOneShotService.enqueue(this, trigger)
         Timber.i(
             "Air notification bridge package=%s pattern=%s accepted=%s",
             rule.packageName,

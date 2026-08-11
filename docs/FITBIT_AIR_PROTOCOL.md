@@ -50,3 +50,21 @@ One pattern group is one complete toggle/restore primitive. Multiple groups are 
 | `urgent` | 4 | 450 ms, 1350 ms, 450 ms |
 
 Actual perceived timing also includes BLE/CoAP response latency. Patterns therefore require device testing and are not real-time waveforms.
+
+## Connection ownership and v10014 time-sharing
+
+Interoperability testing indicates that Fitbit Air accepts only one active Gattlink/DTLS owner. A persistent bridge connection therefore prevents Google Health from connecting, and vice versa.
+
+v10014 changes the notification path to:
+
+```text
+notification listener (disconnected)
+  -> foreground one-shot task
+  -> wait for the saved Air address to advertise
+  -> Gattlink + BOOTSTRAP DTLS
+  -> execute and verify pattern
+  -> close the Golden Gate peer and BLE connection
+  -> stop the foreground task
+```
+
+The task makes at most three attempts. The scan and connection timeouts deliberately bound how long the bridge competes with Google Health. This time-sharing behavior is pending device validation.

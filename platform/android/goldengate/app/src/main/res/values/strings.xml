@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Fitbit Air Notification Bridge v10013</string>
+    <string name="app_name">Fitbit Air Notification Bridge v10014</string>
     <string name="disconnect">Disconnect</string>
     <string name="connectCentralMode">Connect</string>
     <string name="gg_devices">Fitbit Air devices</string>
@@ -19,7 +19,7 @@
 
     <string name="link_controller_setup">Link Controller Setup</string>
     <string name="title_activity_scan">扫描 Fitbit Air</string>
-    <string name="title_activity_coap">Air Notification Bridge v10013</string>
+    <string name="title_activity_coap">Air Notification Bridge v10014 Diagnostics</string>
     <string name="title_activity_blast">Blast</string>
 
     <string name="scan_item_name">Name: %s</string>

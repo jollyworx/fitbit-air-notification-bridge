@@ -29,6 +29,11 @@ data class AirNotificationRule(
     val pattern: AirHapticPattern
 )
 
+data class AirNotificationTrigger(
+    val sourcePackage: String,
+    val pattern: AirHapticPattern
+)
+
 data class AirNotificationRuleParseResult(
     val rules: List<AirNotificationRule>,
     val errors: List<String>
