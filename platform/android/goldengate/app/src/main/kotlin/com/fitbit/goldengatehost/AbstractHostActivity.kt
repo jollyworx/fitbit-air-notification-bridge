@@ -272,7 +272,7 @@ abstract class AbstractHostActivity<T: StackService> : AppCompatActivity() {
 
         companionDeviceManager?.associate(linkingRequest,
             object : CompanionDeviceManager.Callback() {
-                override fun onDeviceFound(chooserLauncher: IntentSender?) {
+                override fun onDeviceFound(chooserLauncher: IntentSender) {
                     Timber.v("We've found the device for the user")
                     try {
                         if (!isFinishing) {

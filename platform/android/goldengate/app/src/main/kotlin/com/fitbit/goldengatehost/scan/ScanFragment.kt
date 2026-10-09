@@ -237,8 +237,8 @@ class ScanFragment : Fragment() {
         manager.associate(
             request,
             object : CompanionDeviceManager.Callback() {
-                override fun onDeviceFound(chooserLauncher: IntentSender?) {
-                    if (chooserLauncher == null || !isAdded) {
+                override fun onDeviceFound(chooserLauncher: IntentSender) {
+                    if (!isAdded) {
                         companionPickerStarted = false
                         return
                     }

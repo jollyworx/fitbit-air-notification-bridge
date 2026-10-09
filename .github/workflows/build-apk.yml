@@ -76,6 +76,7 @@ jobs:
           import hashlib
           import struct
           import zipfile
+          import xml.etree.ElementTree as ET
           from pathlib import Path
           apk = Path("platform/android/goldengate/app/build/outputs/apk/debug/app-debug.apk")
           with zipfile.ZipFile(apk) as archive:
@@ -101,6 +102,15 @@ jobs:
                   assert loads, name
                   assert archive.getinfo(name).compress_type == zipfile.ZIP_DEFLATED, name
                   print("Verified AArch64 ELF, 16 KB LOAD alignment and compressed packaging:", name)
+          reports = list(Path("platform/android/goldengate/app/build/test-results/testDebugUnitTest").glob("TEST-*.xml"))
+          assert reports, "No unit-test reports"
+          counts = {key: 0 for key in ("tests", "failures", "errors", "skipped")}
+          for report in reports:
+              suite = ET.parse(report).getroot()
+              for key in counts:
+                  counts[key] += int(suite.get(key, "0"))
+          assert counts["tests"] > 0 and counts["failures"] == counts["errors"] == 0, counts
+          print("Unit-test results:", counts)
           checksum = hashlib.sha256(apk.read_bytes()).hexdigest()
           apk.with_suffix(".apk.sha256").write_text(checksum + "  " + apk.name + "\n")
           print("APK SHA256:", checksum)
