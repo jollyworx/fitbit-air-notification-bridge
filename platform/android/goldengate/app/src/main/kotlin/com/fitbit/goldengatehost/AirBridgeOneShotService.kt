@@ -55,7 +55,7 @@ class AirBridgeOneShotService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification("等待按需震动任务"))
+        startForeground(NOTIFICATION_ID, buildNotification("Wachten op een triltaak"))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -65,7 +65,7 @@ class AirBridgeOneShotService : Service() {
             if (queue.size < MAX_QUEUE_SIZE) {
                 queue.addLast(AirNotificationTrigger(sourcePackage, pattern))
             } else {
-                updateStatus("任务队列已满，忽略 $sourcePackage")
+                updateStatus("De wachtrij is vol; $sourcePackage wordt overgeslagen")
             }
         }
         processNext()
@@ -92,22 +92,22 @@ class AirBridgeOneShotService : Service() {
         }
         acquireWakeLock()
         processing = true
-        updateStatus("准备连接 Air：${trigger.sourcePackage} / ${trigger.pattern.wireName}")
+        updateStatus("Verbinding met Air voorbereiden: ${trigger.sourcePackage} / ${trigger.pattern.wireName}")
         disposables.add(
             executeWithRetry(trigger, 0)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     { result ->
-                        val status = "成功：${trigger.sourcePackage} / ${trigger.pattern.wireName}，" +
-                            "${result.groups.size} 组，强度已恢复为 " +
+                        val status = "Geslaagd: ${trigger.sourcePackage} / ${trigger.pattern.wireName}, " +
+                            "${result.groups.size} trilgroepen; intensiteit hersteld naar " +
                             AirDirectSettingsProtocol.hapticsIntensityName(result.finalIntensity)
                         updateStatus(status)
                         processing = false
                         processNext()
                     },
                     { throwable ->
-                        val status = "失败：${trigger.sourcePackage} / ${trigger.pattern.wireName}：" +
+                        val status = "Mislukt: ${trigger.sourcePackage} / ${trigger.pattern.wireName}: " +
                             "${throwable.javaClass.simpleName}: ${throwable.message ?: "unknown"}"
                         Timber.w(throwable, status)
                         updateStatus(status)
@@ -129,8 +129,8 @@ class AirBridgeOneShotService : Service() {
             } else {
                 val delay = RETRY_DELAYS_MILLIS[attemptIndex]
                 updateStatus(
-                    "Air 暂不可用，${delay / 1000}s 后进行第 ${attemptIndex + 2} 次尝试；" +
-                        "Google Health 可能正在同步"
+                    "Air is tijdelijk niet beschikbaar. Over ${delay / 1000}s volgt poging ${attemptIndex + 2}; " +
+                        "mogelijk synchroniseert Google Health"
                 )
                 Single.timer(delay, TimeUnit.MILLISECONDS)
                     .flatMap { executeWithRetry(trigger, attemptIndex + 1) }
@@ -139,14 +139,14 @@ class AirBridgeOneShotService : Service() {
 
     private fun executeOnce(trigger: AirNotificationTrigger): Single<AirHapticExecutionResult> {
         val address = AirBridgeDeviceSettings.loadAddress(this)
-            ?: return Single.error(IllegalStateException("尚未选择 Fitbit Air"))
+            ?: return Single.error(IllegalStateException("Nog geen Fitbit Air geselecteerd"))
         return Single.fromCallable {
             AirBridgeRuntime.ensureInitialized(this)
             address
         }.flatMap { scanForDevice(it) }
             .flatMap { connection -> connectStack(connection.device.address) }
             .flatMap { endpoint ->
-                updateStatus("已建立 DTLS，正在执行 ${trigger.pattern.wireName}")
+                updateStatus("DTLS-verbinding gereed; trilpatroon uitvoeren: ${trigger.pattern.wireName}")
                 AirHapticPatternExecutor.execute(endpoint, trigger.pattern)
             }
             .flatMap { result ->
@@ -229,7 +229,7 @@ class AirBridgeOneShotService : Service() {
     }
 
     private fun connectStack(address: String): Single<CoapEndpoint> {
-        updateStatus("已发现 Air，正在建立 Gattlink / DTLS")
+        updateStatus("Air gevonden; Gattlink / DTLS opzetten")
         DiagnosticTlsIdentityRecorder.clear()
         val stackConfig = DtlsSocketNetifGattlink(
             Inet4Address.getByName(DEFAULT_SERVER_ADDRESS) as Inet4Address,
@@ -304,7 +304,7 @@ class AirBridgeOneShotService : Service() {
             manager.createNotificationChannel(
                 NotificationChannel(
                     CHANNEL_ID,
-                    "Fitbit Air 按需连接",
+                    "Fitbit Air: verbinden bij een melding",
                     NotificationManager.IMPORTANCE_LOW
                 )
             )
@@ -335,7 +335,7 @@ class AirBridgeOneShotService : Service() {
                 Timber.w(it, "Unable to start one-shot Air service")
                 AirBridgeDeviceSettings.saveLastStatus(
                     context,
-                    "无法启动后台任务：${it.javaClass.simpleName}: ${it.message ?: "unknown"}"
+                    "Achtergrondtaak kon niet starten: ${it.javaClass.simpleName}: ${it.message ?: "unknown"}"
                 )
                 false
             }

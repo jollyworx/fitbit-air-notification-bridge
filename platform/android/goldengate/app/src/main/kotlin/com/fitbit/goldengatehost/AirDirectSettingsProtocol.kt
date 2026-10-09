@@ -48,7 +48,7 @@ object AirDirectSettingsProtocol {
         HAPTICS_OFF -> "OFF"
         HAPTICS_LOW -> "LOW"
         HAPTICS_HIGH -> "HIGH"
-        null -> "未找到 HapticsSetting"
+        null -> "HapticsSetting niet gevonden"
         else -> "UNKNOWN($value)"
     }
 

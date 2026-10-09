@@ -34,10 +34,10 @@ class AirBridgeNotificationSettingsTest {
         )
 
         assertFalse(parsed.isValid)
-        assertTrue(parsed.errors.any { it.contains("最多") })
-        assertTrue(parsed.errors.any { it.contains("重复") })
-        assertTrue(parsed.errors.any { it.contains("有效的应用包名") })
-        assertTrue(parsed.errors.any { it.contains("pattern 无效") })
+        assertTrue(parsed.errors.any { it.contains("maximaal") })
+        assertTrue(parsed.errors.any { it.contains("dubbele regel") })
+        assertTrue(parsed.errors.any { it.contains("ongeldige pakketnaam") })
+        assertTrue(parsed.errors.any { it.contains("ongeldig patroon") })
     }
 
     @Test

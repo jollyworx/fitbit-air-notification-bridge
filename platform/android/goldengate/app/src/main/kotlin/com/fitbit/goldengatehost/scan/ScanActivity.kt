@@ -41,7 +41,7 @@ class ScanActivity : AppCompatActivity(), ScanFragment.ScanListener {
             AirBridgeDeviceSettings.saveDevice(this, connection.device.btDevice)
             Toast.makeText(
                 this,
-                "已保存 Fitbit Air：${connection.device.address}",
+                "Fitbit Air bewaard: ${connection.device.address}",
                 Toast.LENGTH_LONG
             ).show()
             finish()

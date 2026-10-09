@@ -415,7 +415,7 @@ abstract class AbstractHostActivity<T: StackService> : AppCompatActivity() {
                                 "#${index + 1} $value"
                             }.toMutableList()
                             if (dtlsEventsDropped > 0) {
-                                renderedHistory.add("...另有 $dtlsEventsDropped 个后续事件未显示")
+                                renderedHistory.add("...nog $dtlsEventsDropped latere gebeurtenissen niet getoond")
                             }
                             handshakeStatus.text = getString(
                                 R.string.handshake_status,

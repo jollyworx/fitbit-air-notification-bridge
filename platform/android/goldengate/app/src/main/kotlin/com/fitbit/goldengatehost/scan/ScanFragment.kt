@@ -79,14 +79,14 @@ class ScanFragment : Fragment() {
             scanStarted = false
             val callbackContext = context ?: return
             if (errorCode == SCAN_FAILED_APPLICATION_REGISTRATION_FAILED && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val message = "普通扫描注册被系统拒绝，正在转用系统设备选择器\n" +
+                val message = "De gewone scan is geweigerd. De systeemkiezer voor apparaten wordt geopend.\n" +
                     "APPLICATION_REGISTRATION_FAILED ($errorCode)"
                 Timber.w(message)
                 Toast.makeText(callbackContext, message, Toast.LENGTH_LONG).show()
                 startCompanionDevicePicker()
                 return
             }
-            val message = "原生 BLE 扫描失败：${scanErrorName(errorCode)} ($errorCode)\n" +
+            val message = "BLE-scan mislukt: ${scanErrorName(errorCode)} ($errorCode)\n" +
                 AirBluetoothPermissions.readinessSummary(callbackContext)
             Timber.e(message)
             if (isAdded) {
@@ -152,7 +152,7 @@ class ScanFragment : Fragment() {
         if (platformScanner == null) {
             Toast.makeText(
                 requireContext(),
-                "无法取得 Android BLE 扫描器\n${AirBluetoothPermissions.readinessSummary(requireContext())}",
+                "Android BLE-scanner niet beschikbaar\n${AirBluetoothPermissions.readinessSummary(requireContext())}",
                 Toast.LENGTH_LONG
             ).show()
             return
@@ -165,10 +165,10 @@ class ScanFragment : Fragment() {
         try {
             platformScanner.startScan(nativeScanFilters(), settings, scanCallback)
             scanStarted = true
-            Toast.makeText(requireContext(), "Android 原生 BLE 扫描已启动", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Android BLE-scan gestart", Toast.LENGTH_SHORT).show()
         } catch (t: Throwable) {
             scanStarted = false
-            val message = "启动原生 BLE 扫描时抛出 ${t.javaClass.simpleName}: ${t.message}\n" +
+            val message = "Fout bij het starten van de BLE-scan: ${t.javaClass.simpleName}: ${t.message}\n" +
                 AirBluetoothPermissions.readinessSummary(requireContext())
             Timber.e(t, message)
             Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
@@ -255,7 +255,7 @@ class ScanFragment : Fragment() {
                     } catch (t: Throwable) {
                         companionPickerStarted = false
                         Timber.e(t, "Unable to open companion device chooser")
-                        Toast.makeText(requireContext(), "无法打开系统设备选择器：${t.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), "De systeemkiezer voor apparaten kon niet openen: ${t.message}", Toast.LENGTH_LONG).show()
                     }
                 }
 
@@ -264,7 +264,7 @@ class ScanFragment : Fragment() {
                     if (!isAdded) return
                     Toast.makeText(
                         requireContext(),
-                        "系统设备选择器失败：${error ?: "unknown"}\n请关闭再打开蓝牙后重试",
+                        "De systeemkiezer voor apparaten is mislukt: ${error ?: "unknown"}\nZet Bluetooth uit en weer aan en probeer opnieuw",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -279,7 +279,7 @@ class ScanFragment : Fragment() {
         if (requestCode != COMPANION_DEVICE_REQUEST_CODE) return
         companionPickerStarted = false
         if (resultCode != Activity.RESULT_OK) {
-            Toast.makeText(context, "没有选择设备", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Geen apparaat geselecteerd", Toast.LENGTH_SHORT).show()
             return
         }
         @Suppress("DEPRECATION")
@@ -288,15 +288,15 @@ class ScanFragment : Fragment() {
             is ScanResult -> {
                 registerScanResult(selected)
                 val device = selected.device
-                Toast.makeText(context, "已由系统选择器加入 ${device.name ?: device.address}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Toegevoegd via de systeemkiezer: ${device.name ?: device.address}", Toast.LENGTH_LONG).show()
             }
             is BluetoothDevice -> {
                 registerBluetoothDevice(selected)
-                Toast.makeText(context, "已由系统选择器加入 ${selected.name ?: selected.address}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Toegevoegd via de systeemkiezer: ${selected.name ?: selected.address}", Toast.LENGTH_LONG).show()
             }
             else -> Toast.makeText(
                 context,
-                "系统选择器没有返回 BLE ScanResult（实际为 ${selected?.javaClass?.simpleName ?: "null"}）",
+                "De systeemkiezer gaf geen BLE ScanResult terug (ontvangen: ${selected?.javaClass?.simpleName ?: "null"})",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -327,7 +327,7 @@ class ScanFragment : Fragment() {
         } else {
             Toast.makeText(
                 context,
-                "无法扫描：${AirBluetoothPermissions.readinessSummary(requireContext())}",
+                "Scannen niet mogelijk: ${AirBluetoothPermissions.readinessSummary(requireContext())}",
                 Toast.LENGTH_LONG
             ).show()
         }

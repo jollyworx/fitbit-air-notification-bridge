@@ -3,7 +3,7 @@
     <string name="disconnect">Disconnect</string>
     <string name="connectCentralMode">Connect</string>
     <string name="gg_devices">Fitbit Air devices</string>
-    <string name="select_device">选择 Fitbit Air</string>
+    <string name="select_device">Fitbit Air selecteren</string>
     <string name="version"><u>Version</u></string>
     <string name="version_number">Version: %1$d.%2$d.%3$d\nBranch Name: %4$s
         \nCommit Hash: %5$s\nBuild Date: %6$s\nBuild Time: %7$s</string>
@@ -18,7 +18,7 @@
     <string name="title_activity_bsd_coap">CoAP</string>
 
     <string name="link_controller_setup">Link Controller Setup</string>
-    <string name="title_activity_scan">扫描 Fitbit Air</string>
+    <string name="title_activity_scan">Fitbit Air zoeken</string>
     <string name="title_activity_coap">Air Notification Bridge v10014 Diagnostics</string>
     <string name="title_activity_blast">Blast</string>
 

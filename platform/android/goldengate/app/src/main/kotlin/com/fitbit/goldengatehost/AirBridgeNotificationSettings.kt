@@ -8,11 +8,11 @@ enum class AirHapticPattern(
     /** Pause after each completed toggle/restore group before starting the next one. */
     val betweenGroupDelaysMillis: List<Long>
 ) {
-    SINGLE("single", "单组", emptyList()),
-    DOUBLE("double", "双组", listOf(650L)),
-    TRIPLE("triple", "三组", listOf(650L, 650L)),
-    LONG_GAP("long_gap", "长间隔双组", listOf(1_800L)),
-    URGENT("urgent", "紧急节奏", listOf(450L, 1_350L, 450L));
+    SINGLE("single", "Eén trilgroep", emptyList()),
+    DOUBLE("double", "Twee trilgroepen", listOf(650L)),
+    TRIPLE("triple", "Drie trilgroepen", listOf(650L, 650L)),
+    LONG_GAP("long_gap", "Twee trilgroepen met langere pauze", listOf(1_800L)),
+    URGENT("urgent", "Dringend trilpatroon", listOf(450L, 1_350L, 450L));
 
     val groupCount: Int
         get() = betweenGroupDelaysMillis.size + 1
@@ -81,24 +81,24 @@ object AirBridgeNotificationSettings {
         val rules = mutableListOf<AirNotificationRule>()
         val seenPackages = mutableSetOf<String>()
 
-        if (lines.isEmpty()) errors += "至少配置一个应用。"
-        if (lines.size > MAX_RULES) errors += "最多只能配置 $MAX_RULES 个应用。"
+        if (lines.isEmpty()) errors += "Stel minstens één app in."
+        if (lines.size > MAX_RULES) errors += "Je kunt maximaal $MAX_RULES apps instellen."
 
         lines.take(MAX_RULES).forEachIndexed { index, line ->
             val parts = line.split('=', limit = 2).map(String::trim)
             if (parts.size != 2) {
-                errors += "第 ${index + 1} 行格式应为：应用包名=pattern。"
+                errors += "Regel ${index + 1}: gebruik pakketnaam=patroon."
                 return@forEachIndexed
             }
             val packageName = parts[0]
             val pattern = AirHapticPattern.fromWireName(parts[1])
             when {
                 !packageNameRegex.matches(packageName) ->
-                    errors += "第 ${index + 1} 行不是有效的应用包名：$packageName"
+                    errors += "Regel ${index + 1}: ongeldige pakketnaam: $packageName"
                 !seenPackages.add(packageName) ->
-                    errors += "第 ${index + 1} 行重复配置了：$packageName"
+                    errors += "Regel ${index + 1}: dubbele regel voor $packageName"
                 pattern == null ->
-                    errors += "第 ${index + 1} 行 pattern 无效：${parts[1]}"
+                    errors += "Regel ${index + 1}: ongeldig patroon: ${parts[1]}"
                 else -> rules += AirNotificationRule(packageName, pattern)
             }
         }

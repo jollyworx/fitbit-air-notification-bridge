@@ -24,7 +24,7 @@ object AirBridgeDeviceSettings {
 
     fun loadDeviceLabel(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val address = prefs.getString(KEY_ADDRESS, null) ?: return "未选择 Fitbit Air"
+        val address = prefs.getString(KEY_ADDRESS, null) ?: return "Nog geen Fitbit Air geselecteerd"
         val name = prefs.getString(KEY_NAME, "Fitbit Air") ?: "Fitbit Air"
         return "$name ($address)"
     }
@@ -38,6 +38,6 @@ object AirBridgeDeviceSettings {
 
     fun loadLastStatus(context: Context): String = context
         .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        .getString(KEY_LAST_STATUS, "尚未执行按需连接任务")
-        ?: "尚未执行按需连接任务"
+        .getString(KEY_LAST_STATUS, "Nog geen verbindingstaak uitgevoerd")
+        ?: "Nog geen verbindingstaak uitgevoerd"
 }

@@ -19,7 +19,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Android 通知 → Fitbit Air"
+                android:text="Androidmeldingen → Fitbit Air"
                 android:textSize="22sp"
                 android:textStyle="bold" />
 
@@ -27,7 +27,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="v10014 按需连接：收到通知后才连接 Air，执行 pattern 并复核，然后立即断开，把设备归还给 Google Health。" />
+                android:text="v10014: de app verbindt pas na een melding met je Air, voert het trilpatroon uit en controleert het resultaat. Daarna verbreekt ze de verbinding, zodat Google Health weer kan verbinden." />
 
             <TextView
                 android:id="@+id/selected_device_status"
@@ -36,7 +36,7 @@
                 android:layout_marginTop="16dp"
                 android:background="#EEEEEE"
                 android:padding="10dp"
-                android:text="目标设备：未选择 Fitbit Air"
+                android:text="Geselecteerd apparaat: Nog geen Fitbit Air geselecteerd"
                 android:textIsSelectable="true" />
 
             <Button
@@ -44,7 +44,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="按需连接并测试 single pattern" />
+                android:text="Verbinden en één trilgroep testen" />
 
             <TextView
                 android:id="@+id/last_task_status"
@@ -53,7 +53,7 @@
                 android:layout_marginTop="8dp"
                 android:background="@android:color/black"
                 android:padding="10dp"
-                android:text="最近任务：尚未执行"
+                android:text="Laatste taak: nog niet uitgevoerd"
                 android:textColor="@android:color/white"
                 android:textIsSelectable="true"
                 android:typeface="monospace" />
@@ -62,7 +62,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="通知规则（最多 5 个）"
+                android:text="Meldingsregels (maximaal 5 apps)"
                 android:textStyle="bold" />
 
             <EditText
@@ -70,7 +70,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="top|start"
-                android:hint="com.tencent.mm=single"
+                android:hint="com.whatsapp=single"
                 android:inputType="textMultiLine|textVisiblePassword"
                 android:maxLines="5"
                 android:minLines="3"
@@ -79,14 +79,14 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="每行：应用包名=pattern。pattern 可选 single、double、triple、long_gap、urgent。" />
+                android:text="Eén regel per app: pakketnaam=patroon. Kies single, double, triple, long_gap of urgent." />
 
             <Button
                 android:id="@+id/notification_access_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="保存规则并打开通知访问权限" />
+                android:text="Regels bewaren en meldingentoegang openen" />
 
             <TextView
                 android:id="@+id/notification_access_status"
@@ -95,7 +95,7 @@
                 android:layout_marginTop="8dp"
                 android:background="@android:color/black"
                 android:padding="10dp"
-                android:text="通知访问权限状态：未检查"
+                android:text="Meldingentoegang: nog niet gecontroleerd"
                 android:textColor="@android:color/white"
                 android:textIsSelectable="true"
                 android:typeface="monospace" />
@@ -104,7 +104,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="若 Google Health 正在同步，Bridge 会等待并重试。通知到震动可能有数秒延迟。" />
+                android:text="Tijdens een synchronisatie van Google Health wacht de app en probeert ze opnieuw. De trilling kan enkele seconden later komen." />
         </LinearLayout>
     </ScrollView>
 
@@ -113,6 +113,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorPrimary"
-        android:text="选择并保存 Fitbit Air"
+        android:text="Fitbit Air selecteren en bewaren"
         android:textColor="@android:color/white" />
 </LinearLayout>

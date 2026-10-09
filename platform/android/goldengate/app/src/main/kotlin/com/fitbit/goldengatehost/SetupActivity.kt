@@ -38,7 +38,7 @@ class SetupActivity : AppCompatActivity() {
         chooseDeviceButton.setOnClickListener {
             if (!AirBluetoothPermissions.hasAll(this)) {
                 AirBluetoothPermissions.request(this, REQ_ID)
-                Toast.makeText(this, "请先允许附近设备/蓝牙权限，再次点击选择 Air", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Geef eerst toegang tot nabije apparaten/Bluetooth. Druk daarna opnieuw op Fitbit Air selecteren.", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
             runCatching { AirBridgeRuntime.ensureInitialized(this) }
@@ -49,7 +49,7 @@ class SetupActivity : AppCompatActivity() {
                     )
                 }
                 .onFailure {
-                    Toast.makeText(this, "蓝牙运行时初始化失败：${it.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Bluetooth kon niet worden gestart: ${it.message}", Toast.LENGTH_LONG).show()
                 }
         }
         manualTestButton.setOnClickListener {
@@ -60,7 +60,7 @@ class SetupActivity : AppCompatActivity() {
             )
             Toast.makeText(
                 this,
-                if (accepted) "已启动 single 按需连接测试" else "请先选择 Fitbit Air",
+                if (accepted) "De verbindingstest met één trilgroep is gestart" else "Selecteer eerst je Fitbit Air",
                 Toast.LENGTH_LONG
             ).show()
             refreshStatus()
@@ -88,8 +88,8 @@ class SetupActivity : AppCompatActivity() {
     private fun saveRules(): Boolean {
         val parsed = AirBridgeNotificationSettings.parseRules(notificationRules.text.toString())
         if (!parsed.isValid) {
-            notificationAccessStatus.text = "规则未保存：\n${parsed.errors.joinToString("\n")}"
-            Toast.makeText(this, "请先修正规则格式", Toast.LENGTH_LONG).show()
+            notificationAccessStatus.text = "Regels niet bewaard: \n${parsed.errors.joinToString("\n")}"
+            Toast.makeText(this, "Corrigeer eerst de meldingsregels", Toast.LENGTH_LONG).show()
             return false
         }
         AirBridgeNotificationSettings.saveRules(this, parsed.rules)
@@ -104,9 +104,9 @@ class SetupActivity : AppCompatActivity() {
             "${it.packageName} → ${it.pattern.wireName}"
         }
         notificationAccessStatus.text =
-            "通知访问权限=${if (granted) "已授权" else "未授权"}\n当前规则：\n$rules"
-        selectedDeviceStatus.text = "目标设备：${AirBridgeDeviceSettings.loadDeviceLabel(this)}"
-        lastTaskStatus.text = "最近任务：${AirBridgeDeviceSettings.loadLastStatus(this)}"
+            "Meldingentoegang=${if (granted) "toegestaan" else "niet toegestaan"}\nHuidige regels: \n$rules"
+        selectedDeviceStatus.text = "Geselecteerd apparaat: ${AirBridgeDeviceSettings.loadDeviceLabel(this)}"
+        lastTaskStatus.text = "Laatste taak: ${AirBridgeDeviceSettings.loadLastStatus(this)}"
         manualTestButton.isEnabled = AirBridgeDeviceSettings.loadAddress(this) != null
     }
 }
