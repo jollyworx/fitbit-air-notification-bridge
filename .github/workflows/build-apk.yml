@@ -39,6 +39,9 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
 
       - name: Install Android components
         run: |
@@ -46,7 +49,7 @@ jobs:
           sdkmanager \
             "platform-tools" \
             "platforms;android-30" \
-            "build-tools;30.0.3" \
+            "build-tools;30.0.2" \
             "ndk;23.0.7599858" \
             "cmake;3.10.2.4988404"
 
@@ -66,9 +69,37 @@ jobs:
           chmod +x gradlew
           ./gradlew :app:testDebugUnitTest :app:assembleDebug --stacktrace
 
+      - name: Verify APK architecture and signature
+        run: |
+          APK=platform/android/goldengate/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/30.0.2/apksigner" verify --verbose --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/30.0.2/aapt" dump badging "$APK"
+          python - <<'PY'
+          import hashlib
+          import struct
+          import zipfile
+          from pathlib import Path
+          apk = Path("platform/android/goldengate/app/build/outputs/apk/debug/app-debug.apk")
+          with zipfile.ZipFile(apk) as archive:
+              libs = [name for name in archive.namelist() if name.startswith("lib/") and name.endswith(".so")]
+              assert libs, "No native libraries in APK"
+              assert {name.split("/")[1] for name in libs} == {"arm64-v8a"}, libs
+              assert {"libgg.so", "libxp.so"} <= {name.split("/")[-1] for name in libs}, libs
+              for name in libs:
+                  data = archive.read(name)
+                  assert data[:6] == b"\x7fELF\x02\x01", name
+                  assert struct.unpack_from("<H", data, 18)[0] == 183, name
+                  print("Verified AArch64 ELF:", name)
+          checksum = hashlib.sha256(apk.read_bytes()).hexdigest()
+          apk.with_suffix(".apk.sha256").write_text(checksum + "  " + apk.name + "\n")
+          print("APK SHA256:", checksum)
+          PY
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Fitbit-Air-Notification-Bridge
-          path: platform/android/goldengate/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            platform/android/goldengate/app/build/outputs/apk/debug/app-debug.apk
+            platform/android/goldengate/app/build/outputs/apk/debug/app-debug.apk.sha256
           if-no-files-found: error
