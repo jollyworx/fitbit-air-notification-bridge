@@ -1,6 +1,9 @@
 package com.fitbit.goldengatehost
 
 import android.content.Context
+import android.os.Build
+import android.provider.Telephony
+import android.telecom.TelecomManager
 
 enum class AirHapticPattern(
     val wireName: String,
@@ -46,14 +49,35 @@ object AirBridgeNotificationSettings {
     private const val PREFS_NAME = "air_notification_bridge"
     private const val KEY_RULES = "notification_rules"
     const val MAX_RULES = 5
-    const val DEFAULT_RULES_TEXT = "com.tencent.mm=single"
+    const val DEFAULT_RULES_TEXT = "com.google.android.apps.messaging=single\n" +
+        "com.google.android.dialer=urgent\n" +
+        "com.whatsapp=double\n" +
+        "com.facebook.orca=triple\n" +
+        "com.microsoft.office.outlook=long_gap"
+
+    /** Read the user's selected apps without changing Android's default apps. */
+    fun defaultRulesText(context: Context): String {
+        val smsPackage = runCatching { Telephony.Sms.getDefaultSmsPackage(context) }
+            .getOrNull()?.takeIf(String::isNotBlank) ?: "com.google.android.apps.messaging"
+        val dialerPackage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            runCatching {
+                (context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager)
+                    ?.defaultDialerPackage
+            }.getOrNull()?.takeIf(String::isNotBlank)
+        } else null
+        return "$smsPackage=single\n" +
+            "${dialerPackage ?: "com.google.android.dialer"}=urgent\n" +
+            "com.whatsapp=double\n" +
+            "com.facebook.orca=triple\n" +
+            "com.microsoft.office.outlook=long_gap"
+    }
 
     private val packageNameRegex = Regex("[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+")
 
     fun loadText(context: Context): String = context
         .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        .getString(KEY_RULES, DEFAULT_RULES_TEXT)
-        ?: DEFAULT_RULES_TEXT
+        .getString(KEY_RULES, null)
+        ?: defaultRulesText(context)
 
     fun saveRules(context: Context, rules: List<AirNotificationRule>) {
         require(rules.isNotEmpty()) { "At least one notification rule is required" }
@@ -66,7 +90,7 @@ object AirBridgeNotificationSettings {
 
     fun loadRules(context: Context): List<AirNotificationRule> {
         val parsed = parseRules(loadText(context))
-        return if (parsed.isValid) parsed.rules else parseRules(DEFAULT_RULES_TEXT).rules
+        return if (parsed.isValid) parsed.rules else parseRules(defaultRulesText(context)).rules
     }
 
     fun findRule(context: Context, packageName: String): AirNotificationRule? =

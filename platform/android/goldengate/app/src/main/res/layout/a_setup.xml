@@ -62,7 +62,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="Meldingsregels (maximaal 5 apps)"
+                android:text="Sms, oproepen, WhatsApp, Messenger en Outlook"
                 android:textStyle="bold" />
 
             <EditText
@@ -79,7 +79,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Eén regel per app: pakketnaam=patroon. Kies single, double, triple, long_gap of urgent." />
+                android:text="Je standaard sms- en telefoonapp worden automatisch ingevuld, samen met WhatsApp, Messenger en Outlook (maximaal 5 apps). Herkende inkomende oproepen gebruiken altijd urgent. Eén regel per app: pakketnaam=patroon. Kies single, double, triple, long_gap of urgent." />
 
             <Button
                 android:id="@+id/notification_access_button"

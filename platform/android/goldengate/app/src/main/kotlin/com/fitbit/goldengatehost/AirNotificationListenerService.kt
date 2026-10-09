@@ -10,6 +10,7 @@ import timber.log.Timber
 
 class AirNotificationListenerService : NotificationListenerService() {
     private val recentNotifications = LinkedHashMap<String, Long>()
+    private val incomingCalls = AirIncomingCallTracker()
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -30,10 +31,19 @@ class AirNotificationListenerService : NotificationListenerService() {
         val rule = AirBridgeNotificationSettings.findRule(this, sbn.packageName) ?: return
 
         val notification = sbn.notification ?: return
-        if (notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
-        if (notification.flags and Notification.FLAG_ONGOING_EVENT != 0) return
-
         val extras = notification.extras
+        val delivery = AirNotificationFilter.classify(
+            isGroupSummary = notification.flags and Notification.FLAG_GROUP_SUMMARY != 0,
+            isOngoing = notification.flags and Notification.FLAG_ONGOING_EVENT != 0,
+            isCallCategory = notification.category == Notification.CATEGORY_CALL,
+            callType = extras?.getInt(AirNotificationFilter.EXTRA_CALL_TYPE, 0) ?: 0,
+            hasFullScreenIntent = notification.fullScreenIntent != null,
+            usesChronometer = extras?.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER, false) ?: false
+        )
+        if (delivery == AirNotificationFilter.Delivery.IGNORE) return
+        val incomingCall = delivery == AirNotificationFilter.Delivery.INCOMING_CALL
+        val notificationKey = sbn.key ?: "${sbn.packageName}:${sbn.id}:${sbn.tag.orEmpty()}"
+        if (incomingCall && incomingCalls.wasDelivered(notificationKey)) return
         val contentSignature = listOf(
             sbn.packageName,
             sbn.key ?: "${sbn.id}:${sbn.tag.orEmpty()}",
@@ -41,16 +51,23 @@ class AirNotificationListenerService : NotificationListenerService() {
             extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty(),
             extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString().orEmpty()
         ).joinToString("\u0000")
-        if (isRecentDuplicate(contentSignature)) return
+        if (!incomingCall && isRecentDuplicate(contentSignature)) return
 
-        val trigger = AirNotificationTrigger(rule.packageName, rule.pattern)
+        val pattern = if (incomingCall) AirHapticPattern.URGENT else rule.pattern
+        val trigger = AirNotificationTrigger(rule.packageName, pattern)
         val accepted = AirBridgeOneShotService.enqueue(this, trigger)
+        if (incomingCall && accepted) incomingCalls.markDelivered(notificationKey)
         Timber.i(
             "Air notification bridge package=%s pattern=%s accepted=%s",
             rule.packageName,
-            rule.pattern.wireName,
+            pattern.wireName,
             accepted
         )
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        sbn ?: return
+        incomingCalls.onRemoved(sbn.key ?: "${sbn.packageName}:${sbn.id}:${sbn.tag.orEmpty()}")
     }
 
     private fun isRecentDuplicate(signature: String): Boolean {

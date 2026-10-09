@@ -7,6 +7,23 @@ import org.junit.Test
 
 class AirBridgeNotificationSettingsTest {
     @Test
+    fun presetsCoverSmsPhoneWhatsAppMessengerAndOutlookWithinTheFiveAppLimit() {
+        val parsed = AirBridgeNotificationSettings.parseRules(AirBridgeNotificationSettings.DEFAULT_RULES_TEXT)
+        assertTrue(parsed.errors.toString(), parsed.isValid)
+        assertEquals(5, parsed.rules.size)
+        assertEquals(
+            listOf(
+                AirNotificationRule("com.google.android.apps.messaging", AirHapticPattern.SINGLE),
+                AirNotificationRule("com.google.android.dialer", AirHapticPattern.URGENT),
+                AirNotificationRule("com.whatsapp", AirHapticPattern.DOUBLE),
+                AirNotificationRule("com.facebook.orca", AirHapticPattern.TRIPLE),
+                AirNotificationRule("com.microsoft.office.outlook", AirHapticPattern.LONG_GAP)
+            ),
+            parsed.rules
+        )
+    }
+
+    @Test
     fun parsesPackagePatternRules() {
         val parsed = AirBridgeNotificationSettings.parseRules(
             "com.tencent.mm=single\norg.telegram.messenger=long_gap"

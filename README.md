@@ -17,7 +17,9 @@ The project is based on Fitbit's Apache-2.0-licensed [Golden Gate](https://githu
 - Verify that the final device setting matches the original setting.
 - Monitor up to five Android application packages.
 - Assign one of five patterns to each application: `single`, `double`, `triple`, `long_gap`, or `urgent`.
-- Filter group summaries, ongoing notifications, self-notifications and recent duplicate content.
+- Filter group summaries, background-work notifications, self-notifications and recent duplicate content.
+- Preconfigure SMS, the default phone app, WhatsApp, Messenger and Outlook. Android's selected SMS and phone apps are detected when there are no saved rules.
+- Forward recognized incoming-call notifications, including ongoing ones, with the `urgent` pattern. Suppress repeated ringing updates for the same notification key until removal. Modern CallStyle metadata is used; older call notifications need a full-screen intent and no running chronometer.
 - Persist the selected Air address and execute each alert as a foreground one-shot task.
 - Scan, connect, establish DTLS, run and verify the pattern, then disconnect immediately so Google Health can reconnect.
 - Retry a temporarily unavailable Air twice with short backoff delays.
@@ -25,9 +27,11 @@ The project is based on Fitbit's Apache-2.0-licensed [Golden Gate](https://githu
 Example rules:
 
 ```text
-com.tencent.mm=single
-org.telegram.messenger=double
-com.whatsapp=long_gap
+com.google.android.apps.messaging=single
+com.google.android.dialer=urgent
+com.whatsapp=double
+com.facebook.orca=triple
+com.microsoft.office.outlook=long_gap
 ```
 
 ## Important limitations
@@ -38,12 +42,13 @@ com.whatsapp=long_gap
 - Fitbit Air cannot be actively owned by this app and Google Health at the same time. v10014 time-shares it instead of maintaining a permanent connection.
 - If Google Health is syncing, alert delivery may be delayed while the bridge waits for the Air to advertise again.
 - The current saved Bluetooth address may need to be selected again if the device rotates its BLE address.
+- Incoming-call delivery depends on the phone/app posting a recognizable notification and still needs validation on the user's device. Apps with a custom call notification lacking CallStyle metadata or a full-screen intent may be skipped. One bounded pattern is queued per recognized ringing call; this does not continuously vibrate until answer or cancel a pattern already started when the call is answered.
 
 ## Basic use
 
 1. Install the app and grant Nearby devices/Bluetooth access.
 2. Tap **Select and save Fitbit Air** once. Google Health may need to be idle for this initial scan.
-3. Configure up to five `package=pattern` rules and grant Notification access.
+3. Check the five prefilled `package=pattern` rules and grant Notification access. Existing saved rules are preserved. Other editions such as WhatsApp Business need their own package name.
 4. Use the one-shot `single` test. The status panel records discovery, retry, success, or failure.
 5. Leave Google Health running and send a real notification from a configured application.
 
