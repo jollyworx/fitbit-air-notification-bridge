@@ -25,8 +25,13 @@ object AirBluetoothPermissions {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
 
+    fun hasNotificationPermission(context: Context): Boolean = Build.VERSION.SDK_INT < 33 ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
     fun request(activity: Activity, requestCode: Int) {
-        ActivityCompat.requestPermissions(activity, requiredPermissions(), requestCode)
+        val permissions = requiredPermissions().toMutableList()
+        if (Build.VERSION.SDK_INT >= 33) permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        ActivityCompat.requestPermissions(activity, permissions.toTypedArray(), requestCode)
     }
 
     fun readinessSummary(context: Context): String {

@@ -12,6 +12,8 @@ def hostVersionName = sprintf("$HOST_VERSION", hostVersionCode)
 apply from: project.SDK_VERSIONS_GRADLE
 
 android {
+    namespace "com.fitbit.goldengatehost"
+    packagingOptions { jniLibs { useLegacyPackaging true } }
     signingConfigs {
         release {
             storeFile file('./keystore')
@@ -35,18 +37,11 @@ android {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
-            consumerProguardFile 'proguard-rules.pro'
         }
         library {
             debuggable true
             minifyEnabled false
             signingConfig signingConfigs.release
-        }
-    }
-    android {
-        compileOptions {
-            sourceCompatibility 1.8
-            targetCompatibility 1.8
         }
     }
     sourceSets {

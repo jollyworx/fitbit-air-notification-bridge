@@ -9,6 +9,7 @@ plugins {
 def packageName = 'com.fitbit.goldengate.bindings'
 
 apply from: '../gg_lib_android_build.gradle'
+android { namespace 'com.fitbit.goldengate.bindings' }
 
 android {
 
@@ -19,7 +20,6 @@ android {
         }
         externalNativeBuild {
             cmake {
-                ndkVersion project.NDK_VERSION
                 arguments "-DGG_ENABLE_UNIT_TESTS=FALSE"
             }
         }
@@ -92,13 +92,10 @@ task unixClean(type: Delete) {
 project.afterEvaluate {
     if (org.gradle.internal.os.OperatingSystem.current().isUnix()) {
         javaPreCompileDebugUnitTest.dependsOn unixMake
-        externalNativeBuildCleanDebug.dependsOn unixClean
+        tasks.matching { it.name == "externalNativeBuildCleanDebug" }.configureEach { dependsOn unixClean }
     }
 
-    //For reasons I don't understand, when this task is run via being included in the GoldenGateHost app,
-    //It doesn't execute because it's erroneously marked as up-to-date. Hardcoding this here until a better
-    //solution is found.
-    generateJsonModelDebug.outputs.upToDateWhen {false}
+    // AGP 8 tracks CMake configuration inputs without the removed generateJsonModel task.
 }
 
 configurations {
@@ -123,14 +120,14 @@ dependencies {
 task ktlint (type: JavaExec, group: "verification") {
     description "Check Kotlin code style"
     classpath configurations.ktlint
-    main "com.github.shyiko.ktlint.Main"
+    mainClass.set("com.github.shyiko.ktlint.Main")
     args "src/**/*.kt"
 }
 
 task ktlintFormat(type: JavaExec, group: "formatting") {
     description = "Fix Kotlin code style deviations."
     classpath = configurations.ktlint
-    main = "com.github.shyiko.ktlint.Main"
+    mainClass.set("com.github.shyiko.ktlint.Main")
     args "-F", "src/**/*.kt"
 }
 

@@ -43,6 +43,12 @@ add_library( # Sets the name of the library.
              ""
              )
 
+if(ANDROID)
+    # Support both 4 KB and 16 KB page-size Android devices.
+    set_property(TARGET xp APPEND_STRING PROPERTY LINK_FLAGS
+        " -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384")
+endif()
+
 find_library( # Sets the name of the path variable.
               log-lib
 

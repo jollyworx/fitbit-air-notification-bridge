@@ -27,7 +27,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="v10014: de app verbindt pas na een melding met je Air, voert het trilpatroon uit en controleert het resultaat. Daarna verbreekt ze de verbinding, zodat Google Health weer kan verbinden." />
+                android:text="v10015: schakel de bridge in om meldingen te ontvangen. Je ziet dan een statusmelding. De app verbindt pas na een melding met je Air, voert het trilpatroon uit en controleert het resultaat. Daarna verbreekt ze de verbinding, zodat Google Health weer kan verbinden." />
 
             <TextView
                 android:id="@+id/selected_device_status"
@@ -38,6 +38,13 @@
                 android:padding="10dp"
                 android:text="Geselecteerd apparaat: Nog geen Fitbit Air geselecteerd"
                 android:textIsSelectable="true" />
+
+            <Button
+                android:id="@+id/bridge_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Bridge inschakelen" />
 
             <Button
                 android:id="@+id/manual_test_button"

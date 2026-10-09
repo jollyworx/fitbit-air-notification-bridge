@@ -4,6 +4,7 @@
 apply from: project.SDK_VERSIONS_GRADLE
 
 android {
+    buildFeatures { buildConfig true }
     defaultConfig {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }

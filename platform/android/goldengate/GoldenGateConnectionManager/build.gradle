@@ -10,10 +10,11 @@ def packageName = 'com.fitbit.goldengate.connectionmanager'
 
 task sourceJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
-    classifier "sources"
+    archiveClassifier.set("sources")
 }
 
 apply from: '../gg_lib_android_build.gradle'
+android { namespace 'com.fitbit.goldengate.connectionmanager' }
 
 dependencies {
     implementation project(':RxFitbitGatt')

@@ -18,7 +18,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Java 17 for Android SDK
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -49,18 +49,14 @@ jobs:
           yes | sdkmanager --licenses || true
           sdkmanager \
             "platform-tools" \
-            "platforms;android-30" \
-            "build-tools;30.0.2" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
             "ndk;23.0.7599858" \
             "cmake;3.10.2.4988404"
 
-      - name: Set up Java 11 for Gradle
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "11"
-
       - name: Build Golden Gate Android core
+        env:
+          LDFLAGS: "-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384"
         run: |
           inv android.library.build --profile=arm64-v8a
 
@@ -73,8 +69,9 @@ jobs:
       - name: Verify APK architecture and signature
         run: |
           APK=platform/android/goldengate/app/build/outputs/apk/debug/app-debug.apk
-          "$ANDROID_HOME/build-tools/30.0.2/apksigner" verify --verbose --print-certs "$APK"
-          "$ANDROID_HOME/build-tools/30.0.2/aapt" dump badging "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep -qx "targetSdkVersion:'34'"
           python - <<'PY'
           import hashlib
           import struct
@@ -90,7 +87,20 @@ jobs:
                   data = archive.read(name)
                   assert data[:6] == b"\x7fELF\x02\x01", name
                   assert struct.unpack_from("<H", data, 18)[0] == 183, name
-                  print("Verified AArch64 ELF:", name)
+                  phoff = struct.unpack_from("<Q", data, 32)[0]
+                  phentsize, phnum = struct.unpack_from("<HH", data, 54)
+                  loads = []
+                  for index in range(phnum):
+                      segment = struct.unpack_from("<IIQQQQQQ", data, phoff + index * phentsize)
+                      kind, flags, offset, vaddr, paddr, filesz, memsz, align = segment
+                      if kind == 1:
+                          assert align >= 16384, (name, align)
+                          loads.append(align)
+                      if kind == 0x6474e552:
+                          assert (vaddr + memsz) % 16384 == 0, (name, "unaligned RELRO")
+                  assert loads, name
+                  assert archive.getinfo(name).compress_type == zipfile.ZIP_DEFLATED, name
+                  print("Verified AArch64 ELF, 16 KB LOAD alignment and compressed packaging:", name)
           checksum = hashlib.sha256(apk.read_bytes()).hexdigest()
           apk.with_suffix(".apk.sha256").write_text(checksum + "  " + apk.name + "\n")
           print("APK SHA256:", checksum)

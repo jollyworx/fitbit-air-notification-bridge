@@ -5,6 +5,8 @@ package com.fitbit.goldengatehost
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -23,6 +25,14 @@ class SetupActivity : AppCompatActivity() {
     private lateinit var lastTaskStatus: TextView
     private lateinit var chooseDeviceButton: Button
     private lateinit var manualTestButton: Button
+    private lateinit var bridgeButton: Button
+    private val statusHandler = Handler(Looper.getMainLooper())
+    private val statusRefresh = object : Runnable {
+        override fun run() {
+            refreshStatus()
+            statusHandler.postDelayed(this, 1000L)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,9 +62,18 @@ class SetupActivity : AppCompatActivity() {
                     Toast.makeText(this, "Bluetooth kon niet worden gestart: ${it.message}", Toast.LENGTH_LONG).show()
                 }
         }
+        bridgeButton.setOnClickListener {
+            if (AirBridgeOneShotService.isRunning()) {
+                AirBridgeOneShotService.stopBridge()
+                Toast.makeText(this, "De bridge stopt zodra de huidige triltaak klaar is", Toast.LENGTH_LONG).show()
+            } else if (saveRules() && ensureBridgePermissions()) {
+                val accepted = AirBridgeOneShotService.startBridge(this)
+                Toast.makeText(this, if (accepted) "Bridge inschakelen" else "Bridge kon niet starten; controleer de laatste taak", Toast.LENGTH_LONG).show()
+            }
+        }
         manualTestButton.setOnClickListener {
-            if (!saveRules()) return@setOnClickListener
-            val accepted = AirBridgeOneShotService.enqueue(
+            if (!saveRules() || !ensureBridgePermissions()) return@setOnClickListener
+            val accepted = AirBridgeOneShotService.startBridge(
                 this,
                 AirNotificationTrigger("manual.test", AirHapticPattern.SINGLE)
             )
@@ -69,10 +88,28 @@ class SetupActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        refreshStatus()
+        statusHandler.post(statusRefresh)
         if (!AirBluetoothPermissions.hasAll(this)) {
             AirBluetoothPermissions.request(this, REQ_ID)
         }
+    }
+
+    override fun onPause() {
+        statusHandler.removeCallbacks(statusRefresh)
+        super.onPause()
+    }
+
+    private fun ensureBridgePermissions(): Boolean {
+        if (AirBridgeDeviceSettings.loadAddress(this) == null) {
+            Toast.makeText(this, "Selecteer eerst je Fitbit Air", Toast.LENGTH_LONG).show()
+            return false
+        }
+        if (!AirBluetoothPermissions.hasAll(this) || !AirBluetoothPermissions.hasNotificationPermission(this)) {
+            AirBluetoothPermissions.request(this, REQ_ID)
+            Toast.makeText(this, "Sta Bluetooth en meldingen toe. Druk daarna opnieuw op de knop.", Toast.LENGTH_LONG).show()
+            return false
+        }
+        return true
     }
 
     private fun bindViews() {
@@ -83,6 +120,7 @@ class SetupActivity : AppCompatActivity() {
         lastTaskStatus = ActivityCompat.requireViewById(this, R.id.last_task_status)
         chooseDeviceButton = ActivityCompat.requireViewById(this, R.id.start_button)
         manualTestButton = ActivityCompat.requireViewById(this, R.id.manual_test_button)
+        bridgeButton = ActivityCompat.requireViewById(this, R.id.bridge_button)
     }
 
     private fun saveRules(): Boolean {
@@ -107,6 +145,8 @@ class SetupActivity : AppCompatActivity() {
             "Meldingentoegang=${if (granted) "toegestaan" else "niet toegestaan"}\nHuidige regels: \n$rules"
         selectedDeviceStatus.text = "Geselecteerd apparaat: ${AirBridgeDeviceSettings.loadDeviceLabel(this)}"
         lastTaskStatus.text = "Laatste taak: ${AirBridgeDeviceSettings.loadLastStatus(this)}"
+        bridgeButton.text = if (AirBridgeOneShotService.isRunning()) "Bridge uitschakelen" else "Bridge inschakelen"
+        bridgeButton.isEnabled = AirBridgeDeviceSettings.loadAddress(this) != null
         manualTestButton.isEnabled = AirBridgeDeviceSettings.loadAddress(this) != null
     }
 }

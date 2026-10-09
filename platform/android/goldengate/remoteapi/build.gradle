@@ -11,6 +11,7 @@ apply from: '../jacoco.gradle'
 def packageName = 'com.fitbit.remoteapi'
 
 apply from: '../gg_lib_android_build.gradle'
+android { namespace 'com.fitbit.remoteapi' }
 
 dependencies {
     implementation project(':RxFitbitGatt')
@@ -38,5 +39,5 @@ dependencies {
 
 task sourceJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
-    classifier "sources"
+    archiveClassifier.set("sources")
 }

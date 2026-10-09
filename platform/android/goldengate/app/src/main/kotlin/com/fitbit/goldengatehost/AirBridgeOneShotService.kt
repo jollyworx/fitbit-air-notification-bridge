@@ -1,5 +1,6 @@
 package com.fitbit.goldengatehost
 
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -41,6 +42,7 @@ import java.util.ArrayDeque
 import java.util.concurrent.TimeUnit
 
 /**
+ * User-enabled foreground bridge. While idle it holds no BLE connection or wake lock.
  * Owns the Air connection only for one queued notification task:
  * scan -> connect -> DTLS -> haptic pattern -> verify -> disconnect.
  */
@@ -49,32 +51,64 @@ class AirBridgeOneShotService : Service() {
     private val disposables = CompositeDisposable()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var processing = false
+    private var stopping = false
     private var activePeer: StackPeer<CoapEndpoint>? = null
     private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate() {
         super.onCreate()
+        if (!AirBluetoothPermissions.hasAll(this) || AirBridgeDeviceSettings.loadAddress(this) == null) {
+            AirBridgeDeviceSettings.saveLastStatus(this, "Selecteer je Air en geef Bluetoothrechten voordat je de bridge inschakelt")
+            stopSelf()
+            return
+        }
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification("Wachten op een triltaak"))
+        runCatching { startForeground(NOTIFICATION_ID, buildNotification(IDLE_STATUS)) }
+            .onSuccess { activeService = this }
+            .onFailure {
+                Timber.w(it, "Unable to enable foreground Air bridge")
+                AirBridgeDeviceSettings.saveLastStatus(this, "Bridge kon niet starten: ${it.message}")
+                stopSelf()
+            }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (activeService !== this) return START_NOT_STICKY
+        stopping = false
         val sourcePackage = intent?.getStringExtra(EXTRA_SOURCE_PACKAGE)
         val pattern = intent?.getStringExtra(EXTRA_PATTERN)?.let(AirHapticPattern::fromWireName)
         if (sourcePackage != null && pattern != null) {
-            if (queue.size < MAX_QUEUE_SIZE) {
-                queue.addLast(AirNotificationTrigger(sourcePackage, pattern))
-            } else {
-                updateStatus("De wachtrij is vol; $sourcePackage wordt overgeslagen")
-            }
+            accept(AirNotificationTrigger(sourcePackage, pattern))
         }
         processNext()
-        return START_NOT_STICKY
+        // Android may restore a user-enabled service after reclaiming its process.
+        // A manual stop or force-stop still requires the user to enable it again.
+        return START_STICKY
+    }
+
+    private fun accept(trigger: AirNotificationTrigger): Boolean {
+        synchronized(queue) {
+            if (stopping || queue.size >= MAX_QUEUE_SIZE) return false
+            queue.addLast(trigger)
+        }
+        mainHandler.post { processNext() }
+        return true
+    }
+
+    private fun requestStop() {
+        mainHandler.post {
+            stopping = true
+            synchronized(queue) { queue.clear() }
+            // Let an active pattern finish its restore/verification before disconnecting.
+            processNext()
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        if (activeService === this) activeService = null
+        mainHandler.removeCallbacksAndMessages(null)
         disposables.dispose()
         releasePeer()
         releaseWakeLock()
@@ -83,11 +117,17 @@ class AirBridgeOneShotService : Service() {
 
     private fun processNext() {
         if (processing) return
-        val trigger = queue.pollFirst()
+        val trigger = synchronized(queue) { queue.pollFirst() }
         if (trigger == null) {
             releaseWakeLock()
-            stopForeground(true)
-            stopSelf()
+            if (stopping) {
+                if (activeService === this) activeService = null
+                stopForeground(true)
+                stopSelf()
+            } else {
+                val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                manager.notify(NOTIFICATION_ID, buildNotification(IDLE_STATUS))
+            }
             return
         }
         acquireWakeLock()
@@ -323,22 +363,44 @@ class AirBridgeOneShotService : Service() {
         private const val WAKE_LOCK_TIMEOUT_MILLIS = 120_000L
         private val RETRY_DELAYS_MILLIS = listOf(2_000L, 5_000L)
 
-        fun enqueue(context: Context, trigger: AirNotificationTrigger): Boolean {
-            if (AirBridgeDeviceSettings.loadAddress(context) == null) return false
-            val intent = Intent(context, AirBridgeOneShotService::class.java)
-                .putExtra(EXTRA_SOURCE_PACKAGE, trigger.sourcePackage)
-                .putExtra(EXTRA_PATTERN, trigger.pattern.wireName)
+        private const val IDLE_STATUS = "Bridge actief; wachten op meldingen"
+        @Volatile private var activeService: AirBridgeOneShotService? = null
+
+        fun isRunning(): Boolean = activeService != null
+
+        fun stopBridge() { activeService?.requestStop() }
+
+        /** Only called by a visible activity, never by a background notification callback. */
+        fun startBridge(activity: Activity, trigger: AirNotificationTrigger? = null): Boolean {
+            if (AirBridgeDeviceSettings.loadAddress(activity) == null ||
+                !AirBluetoothPermissions.hasAll(activity) ||
+                !AirBluetoothPermissions.hasNotificationPermission(activity)) return false
+            val intent = Intent(activity, AirBridgeOneShotService::class.java)
+            if (trigger != null) {
+                intent.putExtra(EXTRA_SOURCE_PACKAGE, trigger.sourcePackage)
+                intent.putExtra(EXTRA_PATTERN, trigger.pattern.wireName)
+            }
             return runCatching {
-                ContextCompat.startForegroundService(context, intent)
+                ContextCompat.startForegroundService(activity, intent)
                 true
             }.getOrElse {
-                Timber.w(it, "Unable to start one-shot Air service")
-                AirBridgeDeviceSettings.saveLastStatus(
-                    context,
-                    "Achtergrondtaak kon niet starten: ${it.javaClass.simpleName}: ${it.message ?: "unknown"}"
-                )
+                Timber.w(it, "Unable to start foreground Air bridge")
+                AirBridgeDeviceSettings.saveLastStatus(activity, "Bridge kon niet starten: ${it.message}")
                 false
             }
+        }
+
+        fun enqueue(context: Context, trigger: AirNotificationTrigger): Boolean {
+            val service = activeService
+            if (service == null || !AirBluetoothPermissions.hasAll(context)) {
+                AirBridgeDeviceSettings.saveLastStatus(context, "Open de app en schakel de bridge in om meldingen te ontvangen")
+                return false
+            }
+            val accepted = service.accept(trigger)
+            if (!accepted) {
+                AirBridgeDeviceSettings.saveLastStatus(context, "Bridge stopt of wachtrij is vol; ${trigger.sourcePackage} wordt overgeslagen")
+            }
+            return accepted
         }
     }
 }

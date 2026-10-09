@@ -12,10 +12,11 @@ def packageName = 'com.fitbit.linkcontroller'
 
 task sourceJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
-    classifier "sources"
+    archiveClassifier.set("sources")
 }
 
 apply from: '../gg_lib_android_build.gradle'
+android { namespace 'com.fitbit.linkcontroller' }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
